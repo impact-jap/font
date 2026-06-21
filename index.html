@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Terminal Bitmap Font Tester</title>
+<title>BMF Bitmap Font Tester</title>
 <style>
 :root {
     color-scheme: dark;
@@ -69,15 +69,6 @@ canvas {
     background: #1f1708;
     color: #ffdd8a;
 }
-.file-loader {
-    display: none;
-    margin-bottom: 12px;
-    padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--panel);
-}
-.file-loader input { width: 100%; padding-top: 8px; }
 @media (max-width: 900px) {
     .controls { grid-template-columns: 1fr; }
 }
@@ -85,17 +76,13 @@ canvas {
 </head>
 <body>
 <main>
-    <h1>Terminal Bitmap Font Tester</h1>
-    <p>Loads bitmap fonts from external JSON files, supports local and web paths, and renders byte-oriented 0..255 font sets.</p>
+    <h1>BMF Bitmap Font Tester</h1>
+    <p>Loads source BMF files directly. The JSON files in the fonts folder are generated dist assets.</p>
 
     <div id="warning" class="warning"></div>
-    <div id="fileLoader" class="file-loader">
-        <p>Local JSON fetch was blocked by the browser. Select the JSON font files from the <code>fonts</code> folder to test them without a server.</p>
-        <input id="fontFiles" type="file" accept="application/json,.json" multiple>
-    </div>
 
     <div class="controls">
-        <input id="textInput" type="text" value="Olá, ação, São, café, coração, ¿Qué tal? ½ ¼ © ® °" spellcheck="false">
+        <input id="textInput" type="text" value="Hello ASCII! Ola, acao, Sao, cafe, coracao, 123." spellcheck="false">
         <select id="fontSelect"></select>
         <button id="drawButton" type="button">Draw</button>
         <button id="asciiButton" type="button">ASCII atlas</button>
@@ -107,17 +94,17 @@ canvas {
     <div id="meta" class="meta"></div>
 </main>
 
-<script>
-'use strict';
+<script type="module">
+import { DEFAULT_PAGE, loadBitmapFont, getBitmapGlyph, hasFullCoverage } from './src/bitmap-font-loader.mjs';
 
-const DEFAULT_PAGE = window.location.protocol + '//' + window.location.hostname + window.location.pathname;
-const BASE_URL = new URL('.', window.location.href);
-const MANIFEST_URL = new URL('fonts/manifest.json', BASE_URL).href;
+const FONT_SOURCES = [
+    { id: 'font_terminal_ascii_5x7', label: 'Terminal ASCII 5x7', path: 'source/font_terminal_ascii_5x7.bmf' },
+    { id: 'font_terminal_latin1_8x12', label: 'Terminal Latin-1 8x12', path: 'source/font_terminal_latin1_8x12.bmf' }
+];
 
 const state = {
     fonts: new Map(),
-    manifest: null,
-    selectedFontId: null,
+    selectedFontId: 'font_terminal_latin1_8x12',
     cellSize: 5,
     color: '#00ff96'
 };
@@ -128,8 +115,6 @@ const textInput = document.getElementById('textInput');
 const fontSelect = document.getElementById('fontSelect');
 const meta = document.getElementById('meta');
 const warning = document.getElementById('warning');
-const fileLoader = document.getElementById('fileLoader');
-const fontFiles = document.getElementById('fontFiles');
 
 function showWarning(message) {
     warning.textContent = message;
@@ -141,72 +126,45 @@ function clearWarning() {
     warning.style.display = 'none';
 }
 
-async function fetchJson(url) {
-    const response = await fetch(url, { cache: 'no-cache' });
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status} while loading ${url}`);
-    }
-    return response.json();
-}
-
-async function loadFromManifest() {
-    const manifest = await fetchJson(MANIFEST_URL);
-    state.manifest = manifest;
-
-    for (const entry of manifest.fonts) {
-        const url = new URL(entry.path, BASE_URL).href;
-        const font = await fetchJson(url);
+async function loadFonts() {
+    for (const entry of FONT_SOURCES) {
+        const font = await loadBitmapFont(entry.path);
         state.fonts.set(font.id, font);
     }
-
-    state.selectedFontId = manifest.defaultFont;
     rebuildFontSelect();
     drawText(textInput.value);
 }
 
 function rebuildFontSelect() {
     fontSelect.innerHTML = '';
-    const fonts = Array.from(state.fonts.values()).sort((a, b) => a.label.localeCompare(b.label));
-    for (const font of fonts) {
+    for (const entry of FONT_SOURCES) {
+        const font = state.fonts.get(entry.id);
+        if (!font) continue;
         const option = document.createElement('option');
         option.value = font.id;
         option.textContent = font.label;
         fontSelect.appendChild(option);
     }
-    if (state.selectedFontId && state.fonts.has(state.selectedFontId)) {
-        fontSelect.value = state.selectedFontId;
-    }
+    fontSelect.value = state.selectedFontId;
 }
 
 function getSelectedFont() {
     return state.fonts.get(fontSelect.value) || state.fonts.get(state.selectedFontId) || null;
 }
 
-function codePoints(text) {
+function getCodePoints(text) {
     return Array.from(text).map((char) => char.codePointAt(0));
-}
-
-function getGlyph(font, codePoint) {
-    if (!font) return null;
-    const direct = font.glyphs[String(codePoint)];
-    if (direct) return direct;
-
-    if (codePoint > 255) {
-        return font.glyphs[String(font.fallback || 63)] || font.blank;
-    }
-
-    return font.blank;
 }
 
 function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function drawGlyph(font, glyph, x, y) {
+function drawGlyph(glyph, x, y) {
     ctx.fillStyle = state.color;
-    for (let row = 0; row < glyph.length; row++) {
+    for (let row = 0; row < glyph.length; row += 1) {
         const bits = glyph[row];
-        for (let col = 0; col < bits.length; col++) {
+        for (let col = 0; col < bits.length; col += 1) {
             if (bits[col] === '1') {
                 ctx.fillRect(
                     x + col * state.cellSize,
@@ -220,6 +178,7 @@ function drawGlyph(font, glyph, x, y) {
 }
 
 function drawText(text) {
+    clearWarning();
     const font = getSelectedFont();
     if (!font) {
         showWarning('No font is loaded yet.');
@@ -227,7 +186,7 @@ function drawText(text) {
     }
 
     clearCanvas();
-    const codes = codePoints(text);
+    const codes = getCodePoints(text);
     let x = 24;
     let y = 40;
     const advance = font.advance * state.cellSize;
@@ -235,8 +194,8 @@ function drawText(text) {
     const maxX = canvas.width - advance;
     let outOfRange = 0;
 
-    for (const code of codes) {
-        if (code === 10) {
+    for (const codePoint of codes) {
+        if (codePoint === 10) {
             x = 24;
             y += lineHeight;
             continue;
@@ -245,8 +204,8 @@ function drawText(text) {
             x = 24;
             y += lineHeight;
         }
-        if (code > 255) outOfRange++;
-        drawGlyph(font, getGlyph(font, code), x, y);
+        if (codePoint > 255) outOfRange += 1;
+        drawGlyph(getBitmapGlyph(font, codePoint), x, y);
         x += advance;
     }
 
@@ -258,19 +217,14 @@ function drawText(text) {
         `Cell: ${font.width}x${font.height}`,
         `Advance: ${font.advance}`,
         `Input code points: ${codes.join(', ')}`,
-        `0..255 coverage: ${hasFullByteCoverage(font) ? 'yes' : 'no'}`,
+        `0..127 coverage: ${hasFullCoverage(font, 0, 127) ? 'yes' : 'no'}`,
+        `0..255 coverage: ${hasFullCoverage(font, 0, 255) ? 'yes' : 'no'}`,
         `Out-of-range fallback count: ${outOfRange}`
     ].join('\n');
 }
 
-function hasFullByteCoverage(font) {
-    for (let code = 0; code <= 255; code++) {
-        if (!font.glyphs[String(code)]) return false;
-    }
-    return true;
-}
-
 function drawAtlas(start, end) {
+    clearWarning();
     const font = getSelectedFont();
     if (!font) return;
 
@@ -282,55 +236,31 @@ function drawAtlas(start, end) {
     ctx.font = '12px ui-monospace, monospace';
     ctx.textBaseline = 'top';
 
-    for (let code = start; code <= end; code++) {
-        const index = code - start;
+    for (let codePoint = start; codePoint <= end; codePoint += 1) {
+        const index = codePoint - start;
         const col = index % cols;
         const row = Math.floor(index / cols);
         const x = 16 + col * cellW;
         const y = 16 + row * cellH;
 
-        drawGlyph(font, getGlyph(font, code), x, y);
+        drawGlyph(getBitmapGlyph(font, codePoint), x, y);
         ctx.fillStyle = '#8b949e';
-        ctx.fillText(String(code).padStart(3, '0'), x, y + labelOffset);
+        ctx.fillText(`0x${codePoint.toString(16).toUpperCase().padStart(2, '0')}`, x, y + labelOffset);
     }
 
     meta.textContent = [
         `Page: ${DEFAULT_PAGE}`,
         `Font: ${font.label}`,
         `Atlas range: ${start}..${end}`,
-        `0..255 coverage: ${hasFullByteCoverage(font) ? 'yes' : 'no'}`
+        `0..127 coverage: ${hasFullCoverage(font, 0, 127) ? 'yes' : 'no'}`,
+        `0..255 coverage: ${hasFullCoverage(font, 0, 255) ? 'yes' : 'no'}`
     ].join('\n');
 }
 
-function readFileAsText(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(reader.error);
-        reader.readAsText(file, 'utf-8');
-    });
-}
-
-fontFiles.addEventListener('change', async () => {
-    clearWarning();
-    for (const file of fontFiles.files) {
-        try {
-            const json = JSON.parse(await readFileAsText(file));
-            if (json.schema === 'bitmap-font/v1' && json.id) {
-                state.fonts.set(json.id, json);
-            }
-        } catch (error) {
-            showWarning(`Could not load ${file.name}: ${error.message}`);
-        }
-    }
-    if (!state.selectedFontId && state.fonts.size > 0) {
-        state.selectedFontId = Array.from(state.fonts.keys())[0];
-    }
-    rebuildFontSelect();
+fontSelect.addEventListener('change', () => {
+    state.selectedFontId = fontSelect.value;
     drawText(textInput.value);
 });
-
-fontSelect.addEventListener('change', () => drawText(textInput.value));
 document.getElementById('drawButton').addEventListener('click', () => drawText(textInput.value));
 document.getElementById('asciiButton').addEventListener('click', () => drawAtlas(32, 127));
 document.getElementById('latinButton').addEventListener('click', () => drawAtlas(160, 255));
@@ -339,9 +269,8 @@ textInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') drawText(textInput.value);
 });
 
-loadFromManifest().catch((error) => {
-    fileLoader.style.display = 'block';
-    showWarning(`Automatic JSON loading failed: ${error.message}`);
+loadFonts().catch((error) => {
+    showWarning(`Automatic BMF loading failed: ${error.message}`);
 });
 </script>
 </body>

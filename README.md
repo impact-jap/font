@@ -1,39 +1,84 @@
-# Terminal Bitmap Font Pack
+# Bitmap Font BMF Pack
 
-This pack separates the renderer from the font data.
+This pack uses a small source format for bitmap fonts and generated JSON files for web runtime usage.
 
-## Files
+## Structure
 
-- `index.html`: bitmap font tester.
-- `fonts/manifest.json`: font registry.
-- `fonts/font_terminal_ascii_5x7.json`: compact ASCII-only font, based on the original 0..127 mapping.
-- `fonts/font_terminal_latin1_6x8.json`: compact Latin-1 test font.
-- `fonts/font_terminal_latin1_8x8.json`: retro Latin-1 test font.
-- `fonts/font_terminal_latin1_8x12.json`: recommended Latin-1 font for accented text.
-- `fonts/font_terminal_latin1_8x16.json`: taller Latin-1 font for terminal-style rendering.
+```txt
+source/
+  font_terminal_ascii_5x7.bmf
+  font_terminal_latin1_8x12.bmf
 
-## Local use
+fonts/
+  font_terminal_ascii_5x7.json
+  font_terminal_latin1_8x12.json
+  manifest.json
 
-Opening `index.html` directly may work in some browsers, but others block `fetch()` from local JSON files.
+src/
+  bitmap-font-bmf.mjs
+  bitmap-font-loader.mjs
 
-Recommended local test:
+tools/
+  convert-bmf-to-json.mjs
+```
+
+## Source format
+
+```txt
+BMF 1
+NAME font_terminal_ascii_5x7
+LABEL Terminal_ASCII_5x7
+ENCODING ASCII
+WIDTH 5
+HEIGHT 7
+ADVANCE 6
+BASELINE 7
+RANGE 0x00 0x7F
+FALLBACK 0x3F
+
+GLYPH 0x41 A
+01110
+10001
+10001
+11111
+10001
+10001
+10001
+END
+```
+
+The `.bmf` files intentionally stay 7-bit ASCII. This makes them easy to parse in C, JavaScript, Java, Rust, Python, or old platforms.
+
+## Web usage
+
+```js
+import { loadBitmapFont, getBitmapGlyph } from './src/bitmap-font-loader.mjs';
+
+const font = await loadBitmapFont('source/font_terminal_ascii_5x7.bmf');
+const glyph = getBitmapGlyph(font, 'A'.codePointAt(0));
+```
+
+## Build JSON dist
+
+```bash
+node tools/convert-bmf-to-json.mjs source/font_terminal_ascii_5x7.bmf fonts/font_terminal_ascii_5x7.json
+node tools/convert-bmf-to-json.mjs source/font_terminal_latin1_8x12.bmf fonts/font_terminal_latin1_8x12.json
+```
+
+Or:
+
+```bash
+npm run build
+```
+
+## Serve locally
 
 ```bash
 python -m http.server 8080
 ```
 
-Then open:
+Open:
 
-```text
+```txt
 http://localhost:8080/
 ```
-
-If direct local loading is blocked, use the file input shown by the page and select the JSON files from the `fonts` folder.
-
-## Byte range
-
-- `0..255` is the valid byte range.
-- `256` is outside the byte range.
-- `0..31`, `127`, and `128..159` are control ranges in this pack and are blank.
-- `160` is NBSP and is blank.
-- `161..255` contains Latin-1 printable glyphs.

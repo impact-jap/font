@@ -1,0 +1,10 @@
+{
+  "name": "bitmap-font-bmf-pack",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node tools/convert-bmf-to-json.mjs source/font_terminal_ascii_5x7.bmf fonts/font_terminal_ascii_5x7.json && node tools/convert-bmf-to-json.mjs source/font_terminal_latin1_8x12.bmf fonts/font_terminal_latin1_8x12.json",
+    "serve": "python -m http.server 8080"
+  }
+}
