@@ -10,13 +10,16 @@ const sourceDir = join(rootDir, 'source');
 const fontsDir = join(rootDir, 'fonts');
 const includeDir = join(rootDir, 'include');
 const binaryDir = join(rootDir, 'binary');
+const bitmapDir = join(rootDir, 'bitmap');
 const cHeaderTool = join(rootDir, 'tools', 'convert-bmf-to-c-header.mjs');
 const binaryTool = join(rootDir, 'tools', 'convert-bmf-to-bin.mjs');
 const inspectBinaryTool = join(rootDir, 'tools', 'inspect-bmf-bin.mjs');
+const bitmapTool = join(rootDir, 'tools', 'convert-bmf-to-bmp.mjs');
 
 await mkdir(fontsDir, { recursive: true });
 await mkdir(includeDir, { recursive: true });
 await mkdir(binaryDir, { recursive: true });
+await mkdir(bitmapDir, { recursive: true });
 
 const sourceFiles = (await readdir(sourceDir))
     .filter((name) => name.endsWith('.bmf'))
@@ -36,11 +39,13 @@ for (const fileName of sourceFiles) {
     const jsonPath = join(fontsDir, `${stem}.json`);
     const headerPath = join(includeDir, `${stem}.h`);
     const binaryPath = join(binaryDir, `${stem}.bin`);
+    const bitmapPath = join(bitmapDir, `${stem}.bmp`);
 
     await writeFile(jsonPath, serializeBitmapFontJson(font), 'utf8');
     await runNode(cHeaderTool, inputPath, headerPath);
     await runNode(binaryTool, inputPath, binaryPath);
     await runNode(inspectBinaryTool, binaryPath);
+    await runNode(bitmapTool, inputPath, bitmapPath);
 
     manifestFonts.push({
         id: font.id,
@@ -49,6 +54,15 @@ for (const fileName of sourceFiles) {
         source: `../source/${fileName}`,
         cHeader: `../include/${stem}.h`,
         binary: `../binary/${stem}.bin`,
+        bitmap: `../bitmap/${stem}.bmp`,
+        atlas: {
+            format: 'bmp/indexed8',
+            columns: 16,
+            rows: 16,
+            range: [0, 255],
+            foregroundIndex: 255,
+            backgroundIndex: 0
+        },
         encoding: font.encoding,
         width: font.width,
         height: font.height,
@@ -60,6 +74,7 @@ for (const fileName of sourceFiles) {
     console.log(`Generated fonts/${stem}.json`);
     console.log(`Generated include/${stem}.h`);
     console.log(`Generated binary/${stem}.bin`);
+    console.log(`Generated bitmap/${stem}.bmp`);
 }
 
 const defaultFont = pickDefaultFont(manifestFonts);
@@ -82,6 +97,8 @@ const rootManifest = {
         json: `fonts/${font.path.replace(/^\.\//, '')}`,
         cHeader: font.cHeader.replace(/^\.\.\//, ''),
         binary: font.binary.replace(/^\.\.\//, ''),
+        bitmap: font.bitmap.replace(/^\.\.\//, ''),
+        atlas: font.atlas,
         encoding: font.encoding,
         width: font.width,
         height: font.height,

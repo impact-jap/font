@@ -46,13 +46,30 @@ input, select, button {
 }
 button { cursor: pointer; }
 button:hover { border-color: #505050; }
-canvas {
+canvas, .bitmap-preview img {
     display: block;
     width: 100%;
     min-height: 420px;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: #000;
+}
+.bitmap-preview {
+    margin-top: 16px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+}
+.bitmap-preview h2 {
+    margin: 0 0 8px;
+    font-size: 16px;
+}
+.bitmap-preview img {
+    width: auto;
+    max-width: 100%;
+    min-height: 0;
+    image-rendering: pixelated;
 }
 .meta {
     margin-top: 12px;
@@ -91,6 +108,12 @@ canvas {
     </div>
 
     <canvas id="fontCanvas" width="1600" height="640"></canvas>
+
+    <section class="bitmap-preview">
+        <h2>Generated 8-bit BMP byte atlas</h2>
+        <img id="bitmapAtlas" alt="Selected font BMP byte atlas">
+    </section>
+
     <div id="meta" class="meta"></div>
 </main>
 
@@ -98,8 +121,8 @@ canvas {
 import { DEFAULT_PAGE, loadBitmapFont, getBitmapGlyph, hasFullCoverage } from './src/bitmap-font-loader.mjs';
 
 const FONT_SOURCES = [
-    { id: 'font_terminal_ascii_5x7', label: 'Terminal ASCII 5x7', path: 'binary/font_terminal_ascii_5x7.bin' },
-    { id: 'font_terminal_latin1_8x12', label: 'Terminal Latin-1 8x12', path: 'binary/font_terminal_latin1_8x12.bin' }
+    { id: 'font_terminal_ascii_5x7', label: 'Terminal ASCII 5x7', path: 'binary/font_terminal_ascii_5x7.bin', bitmap: 'bitmap/font_terminal_ascii_5x7.bmp' },
+    { id: 'font_terminal_latin1_8x12', label: 'Terminal Latin-1 8x12', path: 'binary/font_terminal_latin1_8x12.bin', bitmap: 'bitmap/font_terminal_latin1_8x12.bmp' }
 ];
 
 const state = {
@@ -115,6 +138,7 @@ const textInput = document.getElementById('textInput');
 const fontSelect = document.getElementById('fontSelect');
 const meta = document.getElementById('meta');
 const warning = document.getElementById('warning');
+const bitmapAtlas = document.getElementById('bitmapAtlas');
 
 function showWarning(message) {
     warning.textContent = message;
@@ -132,6 +156,7 @@ async function loadFonts() {
         state.fonts.set(font.id, font);
     }
     rebuildFontSelect();
+    updateBitmapAtlas();
     drawText(textInput.value);
 }
 
@@ -150,6 +175,11 @@ function rebuildFontSelect() {
 
 function getSelectedFont() {
     return state.fonts.get(fontSelect.value) || state.fonts.get(state.selectedFontId) || null;
+}
+
+function updateBitmapAtlas() {
+    const selected = FONT_SOURCES.find((entry) => entry.id === fontSelect.value) || FONT_SOURCES[0];
+    bitmapAtlas.src = selected ? selected.bitmap : '';
 }
 
 function getCodePoints(text) {
@@ -259,6 +289,7 @@ function drawAtlas(start, end) {
 
 fontSelect.addEventListener('change', () => {
     state.selectedFontId = fontSelect.value;
+    updateBitmapAtlas();
     drawText(textInput.value);
 });
 document.getElementById('drawButton').addEventListener('click', () => drawText(textInput.value));
