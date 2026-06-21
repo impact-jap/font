@@ -1,0 +1,49 @@
+name: Build Bitmap Fonts
+
+on:
+  push:
+    paths:
+      - 'source/**'
+      - 'src/**'
+      - 'tools/**'
+      - 'build.sh'
+      - 'build.cmd'
+      - 'package.json'
+      - '.github/workflows/build-fonts.yml'
+  pull_request:
+    paths:
+      - 'source/**'
+      - 'src/**'
+      - 'tools/**'
+      - 'build.sh'
+      - 'build.cmd'
+      - 'package.json'
+      - '.github/workflows/build-fonts.yml'
+  workflow_dispatch:
+
+jobs:
+  build-fonts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build generated font files
+        run: ./build.sh
+
+      - name: Verify generated files are committed
+        run: git diff --exit-code -- fonts include
+
+      - name: Upload generated font artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitmap-font-dist
+          path: |
+            fonts/*.json
+            include/*.h
