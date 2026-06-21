@@ -1,0 +1,36 @@
+{
+  "schema": "bitmap-font-manifest/v1",
+  "defaultFont": "font_terminal_latin1_8x12",
+  "fonts": [
+    {
+      "id": "font_terminal_ascii_5x7",
+      "label": "Terminal ASCII 5x7",
+      "encoding": "ascii",
+      "range": [
+        0,
+        127
+      ],
+      "width": 5,
+      "height": 7,
+      "advance": 6,
+      "baseline": 6,
+      "description": "Compact ASCII-only 5x7 bitmap font. Keeps the original 0..127 mapping.",
+      "path": "fonts/font_terminal_ascii_5x7.json"
+    },
+    {
+      "id": "font_terminal_latin1_8x12",
+      "label": "Terminal Latin-1 8x12",
+      "encoding": "iso-8859-1",
+      "range": [
+        0,
+        255
+      ],
+      "width": 8,
+      "height": 12,
+      "advance": 9,
+      "baseline": 10,
+      "description": "Readable 8x12 Latin-1 font. Recommended default for Portuguese text.",
+      "path": "fonts/font_terminal_latin1_8x12.json"
+    }
+  ]
+}
