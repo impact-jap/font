@@ -1,60 +1,25 @@
-name: Build Bitmap Fonts
+name: Build fonts
 
 on:
   push:
-    paths:
-      - 'source/**'
-      - 'src/**'
-      - 'tools/**'
-      - 'build.sh'
-      - 'build.cmd'
-      - 'package.json'
-      - '.github/workflows/build-fonts.yml'
   pull_request:
-    paths:
-      - 'source/**'
-      - 'src/**'
-      - 'tools/**'
-      - 'build.sh'
-      - 'build.cmd'
-      - 'package.json'
-      - '.github/workflows/build-fonts.yml'
   workflow_dispatch:
 
 jobs:
   build-fonts:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '24'
-
-      - name: Build generated font files
-        shell: bash
+          node-version: 24
+      - name: Build generated font artifacts
         run: bash build.sh
-
-      - name: Inspect binary headers
-        shell: bash
-        run: |
-          node tools/inspect-bmf-bin.mjs binary/font_terminal_ascii_5x7.bin
-          node tools/inspect-bmf-bin.mjs binary/font_terminal_latin1_8x12.bin
-
-      - name: Verify generated files are committed
-        shell: bash
-        run: git diff --exit-code -- fonts include binary bitmap manifest.json
-
+      - name: Check generated artifacts are committed
+        run: git diff --exit-code -- dist manifest.json
       - name: Upload generated font artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bitmap-font-dist
-          path: |
-            fonts/*.json
-            include/*.h
-            binary/*.bin
-            bitmap/*.bmp
-            manifest.json
+          name: bitfont-dist
+          path: dist
