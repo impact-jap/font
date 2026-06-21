@@ -32,18 +32,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Build generated font files
-        run: ./build.sh
+        shell: bash
+        run: bash build.sh
 
       - name: Inspect binary headers
+        shell: bash
         run: |
           node tools/inspect-bmf-bin.mjs binary/font_terminal_ascii_5x7.bin
           node tools/inspect-bmf-bin.mjs binary/font_terminal_latin1_8x12.bin
 
       - name: Verify generated files are committed
-        run: git diff --exit-code -- fonts include binary manifest.json
+        shell: bash
+        run: git diff --exit-code -- fonts include binary bitmap manifest.json
 
       - name: Upload generated font artifacts
         uses: actions/upload-artifact@v4
@@ -53,4 +56,5 @@ jobs:
             fonts/*.json
             include/*.h
             binary/*.bin
+            bitmap/*.bmp
             manifest.json
