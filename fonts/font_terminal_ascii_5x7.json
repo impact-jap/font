@@ -11,7 +11,6 @@
   "height": 7,
   "advance": 6,
   "baseline": 6,
-  "description": "Compact ASCII-only 5x7 bitmap font. Keeps the original 0..127 mapping.",
   "blank": [
     "00000",
     "00000",

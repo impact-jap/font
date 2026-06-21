@@ -5,11 +5,13 @@
     {
       "id": "font_terminal_ascii_5x7",
       "label": "Terminal ASCII 5x7",
-      "path": "font_terminal_ascii_5x7.json",
+      "path": "./font_terminal_ascii_5x7.json",
+      "source": "../source/font_terminal_ascii_5x7.bmf",
+      "cHeader": "../include/font_terminal_ascii_5x7.h",
+      "encoding": "ascii",
       "width": 5,
       "height": 7,
       "advance": 6,
-      "encoding": "ascii",
       "range": [
         0,
         127
@@ -18,11 +20,13 @@
     {
       "id": "font_terminal_latin1_8x12",
       "label": "Terminal Latin-1 8x12",
-      "path": "font_terminal_latin1_8x12.json",
+      "path": "./font_terminal_latin1_8x12.json",
+      "source": "../source/font_terminal_latin1_8x12.bmf",
+      "cHeader": "../include/font_terminal_latin1_8x12.h",
+      "encoding": "iso-8859-1",
       "width": 8,
       "height": 12,
       "advance": 9,
-      "encoding": "iso-8859-1",
       "range": [
         0,
         255
