@@ -1,4 +1,5 @@
 import { parseBitmapFontBmf } from './bitmap-font-bmf.mjs';
+import { parseBitmapFontBinary } from './bitmap-font-binary.mjs';
 
 export const DEFAULT_PAGE = window.location.protocol + '//' + window.location.hostname + window.location.pathname;
 
@@ -8,6 +9,10 @@ export async function loadBitmapFont(path) {
 
     if (!response.ok) {
         throw new Error(`Failed to load bitmap font: ${url.href}`);
+    }
+
+    if (url.pathname.endsWith('.bin') || url.pathname.endsWith('.bmfb')) {
+        return parseBitmapFontBinary(await response.arrayBuffer(), url.href);
     }
 
     const text = await response.text();

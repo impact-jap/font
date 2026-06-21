@@ -8,10 +8,12 @@
       "source": "source/font_terminal_ascii_5x7.bmf",
       "json": "fonts/font_terminal_ascii_5x7.json",
       "cHeader": "include/font_terminal_ascii_5x7.h",
+      "binary": "binary/font_terminal_ascii_5x7.bin",
       "encoding": "ascii",
       "width": 5,
       "height": 7,
       "advance": 6,
+      "baseline": 6,
       "range": [
         0,
         127
@@ -23,10 +25,12 @@
       "source": "source/font_terminal_latin1_8x12.bmf",
       "json": "fonts/font_terminal_latin1_8x12.json",
       "cHeader": "include/font_terminal_latin1_8x12.h",
+      "binary": "binary/font_terminal_latin1_8x12.bin",
       "encoding": "iso-8859-1",
       "width": 8,
       "height": 12,
       "advance": 9,
+      "baseline": 10,
       "range": [
         0,
         255

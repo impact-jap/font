@@ -77,7 +77,7 @@ canvas {
 <body>
 <main>
     <h1>BMF Bitmap Font Tester</h1>
-    <p>Loads source BMF files directly. The JSON files in the fonts folder are generated dist assets.</p>
+    <p>Loads generated binary font files directly. Source BMF and JSON dist files are kept beside the binary output.</p>
 
     <div id="warning" class="warning"></div>
 
@@ -98,8 +98,8 @@ canvas {
 import { DEFAULT_PAGE, loadBitmapFont, getBitmapGlyph, hasFullCoverage } from './src/bitmap-font-loader.mjs';
 
 const FONT_SOURCES = [
-    { id: 'font_terminal_ascii_5x7', label: 'Terminal ASCII 5x7', path: 'source/font_terminal_ascii_5x7.bmf' },
-    { id: 'font_terminal_latin1_8x12', label: 'Terminal Latin-1 8x12', path: 'source/font_terminal_latin1_8x12.bmf' }
+    { id: 'font_terminal_ascii_5x7', label: 'Terminal ASCII 5x7', path: 'binary/font_terminal_ascii_5x7.bin' },
+    { id: 'font_terminal_latin1_8x12', label: 'Terminal Latin-1 8x12', path: 'binary/font_terminal_latin1_8x12.bin' }
 ];
 
 const state = {
@@ -270,7 +270,7 @@ textInput.addEventListener('keydown', (event) => {
 });
 
 loadFonts().catch((error) => {
-    showWarning(`Automatic BMF loading failed: ${error.message}`);
+    showWarning(`Automatic binary font loading failed: ${error.message}`);
 });
 </script>
 </body>

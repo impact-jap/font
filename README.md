@@ -1,166 +1,157 @@
 # Bitmap Font BMF Pack
 
-This pack uses `.bmf` as the editable source format and generates runtime files from it.
+This pack uses one editable source format and generates multiple runtime targets.
 
-The source files stay plain 7-bit ASCII and line-oriented so they can be parsed on web, PS2 C code, Windows, Linux, Android, Symbian-era code, or any runtime with basic file reading.
-
-## Structure
-
-```txt
-source/
-  font_terminal_ascii_5x7.bmf
-  font_terminal_latin1_8x12.bmf
-
-fonts/
-  font_terminal_ascii_5x7.json
-  font_terminal_latin1_8x12.json
-  manifest.json
-
-include/
-  font_terminal_ascii_5x7.h
-  font_terminal_latin1_8x12.h
-
-src/
-  bitmap-font-bmf.mjs
-  bitmap-font-loader.mjs
-
-tools/
-  build-bitmap-fonts.mjs
-  convert-bmf-to-json.mjs
-  convert-bmf-to-c-header.mjs
-
-.github/workflows/
-  build-fonts.yml
-
-build.sh
-build.cmd
-index.html
-manifest.json
-package.json
+```text
+source/*.bmf  -> human-readable source
+fonts/*.json  -> web/runtime JSON dist
+include/*.h   -> C/PS2/static row-mask headers
+binary/*.bin  -> aligned binary font format
 ```
 
-## Source format
+## Build
 
-```txt
-BMF 1
-NAME font_terminal_ascii_5x7
-LABEL Terminal_ASCII_5x7
-ENCODING ASCII
-WIDTH 5
-HEIGHT 7
-ADVANCE 6
-BASELINE 6
-RANGE 0x00 0x7F
-FALLBACK 0x3F
-
-GLYPH 0x41 A
-01110
-10001
-10001
-11111
-10001
-10001
-10001
-END
-```
-
-## Build everything
-
-```bash
+```sh
 ./build.sh
 ```
 
-On Windows:
+Windows:
 
 ```bat
 build.cmd
 ```
 
-Or with npm:
+NPM:
 
-```bash
+```sh
 npm run build
-```
-
-This generates:
-
-```txt
-fonts/*.json
-include/*.h
-fonts/manifest.json
-manifest.json
-```
-
-## Build only JSON
-
-```bash
 npm run build:json
-```
-
-## Build only C headers
-
-```bash
 npm run build:c
+npm run build:bin
 ```
 
-## Single-file exporters
+## Included fonts
 
-```bash
-node tools/convert-bmf-to-json.mjs source/font_terminal_ascii_5x7.bmf fonts/font_terminal_ascii_5x7.json
-node tools/convert-bmf-to-c-header.mjs source/font_terminal_ascii_5x7.bmf include/font_terminal_ascii_5x7.h
+```text
+source/font_terminal_ascii_5x7.bmf
+source/font_terminal_latin1_8x12.bmf
 ```
 
-## Web usage
+Generated files:
 
-```js
-import { loadBitmapFont, getBitmapGlyph } from './src/bitmap-font-loader.mjs';
-
-const font = await loadBitmapFont('source/font_terminal_ascii_5x7.bmf');
-const glyph = getBitmapGlyph(font, 'A'.codePointAt(0));
+```text
+fonts/font_terminal_ascii_5x7.json
+fonts/font_terminal_latin1_8x12.json
+include/font_terminal_ascii_5x7.h
+include/font_terminal_latin1_8x12.h
+binary/font_terminal_ascii_5x7.bin
+binary/font_terminal_latin1_8x12.bin
 ```
 
-`loadBitmapFont()` accepts both generated `.json` files and source `.bmf` files.
+## Binary format
 
-## C usage
+The binary format is intentionally simple for old platforms, C, PS2, Windows, Linux, Symbian, Android, and web loaders.
+
+All integer fields are little-endian. All section offsets are absolute file offsets. Sections are 16-byte aligned.
+
+### Header
+
+```text
+Offset  Size  Field
+0x00    4     magic = "BMFB"
+0x04    2     version_major = 1
+0x06    2     version_minor = 0
+0x08    2     header_size = 128
+0x0A    2     alignment = 16
+0x0C    4     file_size
+0x10    4     flags
+0x14    4     encoding_id
+0x18    4     first_code_point
+0x1C    4     last_code_point
+0x20    4     glyph_count
+0x24    4     fallback_code_point
+0x28    2     width
+0x2A    2     height
+0x2C    2     advance
+0x2E    2     baseline
+0x30    2     row_stride
+0x32    2     glyph_record_size = 16
+0x34    4     glyph_index_offset
+0x38    4     glyph_index_size
+0x3C    4     glyph_data_offset
+0x40    4     glyph_data_size
+0x44    4     string_table_offset
+0x48    4     string_table_size
+0x4C    4     name_offset
+0x50    4     label_offset
+0x54    4     encoding_name_offset
+0x58    4     reserved_0
+0x5C    4     reserved_1
+0x60    32    reserved_padding
+```
+
+### Glyph record
+
+Each glyph record is 16 bytes:
+
+```text
+Offset  Size  Field
+0x00    4     code_point
+0x04    4     data_offset
+0x08    2     width
+0x0A    2     height
+0x0C    2     advance
+0x0E    2     flags
+```
+
+### Glyph row data
+
+Rows are stored as little-endian row masks. The leftmost pixel is read with:
 
 ```c
-#include "include/font_terminal_ascii_5x7.h"
-
-const font_terminal_ascii_5x7_row_t *glyph = font_terminal_ascii_5x7_glyph('A');
-uint8_t pixel = font_terminal_ascii_5x7_pixel(glyph, 2, 0);
+pixel = (row_mask >> ((width - 1u) - x)) & 1u;
 ```
 
-The C header stores each row as a compact integer mask:
+For example, a 5-pixel row:
 
-```txt
+```text
 01110 -> 0x0E
 10001 -> 0x11
 11111 -> 0x1F
 ```
 
-For widths up to 8 pixels, the row type is `uint8_t`. For widths up to 16 pixels, it becomes `uint16_t`. For widths up to 32 pixels, it becomes `uint32_t`.
+## Inspect a binary font
 
-## GitHub Actions
+```sh
+node tools/inspect-bmf-bin.mjs binary/font_terminal_ascii_5x7.bin
+```
 
-The workflow at `.github/workflows/build-fonts.yml` runs:
+## Web loader
 
-```bash
+The web loader accepts `.json`, source `.bmf`, and binary `.bin` using the same API:
+
+```js
+import { loadBitmapFont, getBitmapGlyph } from './src/bitmap-font-loader.mjs';
+
+const font = await loadBitmapFont('binary/font_terminal_ascii_5x7.bin');
+const glyph = getBitmapGlyph(font, 0x41);
+```
+
+The loader keeps the local/web-safe page helper:
+
+```js
+export const DEFAULT_PAGE = window.location.protocol + '//' + window.location.hostname + window.location.pathname;
+```
+
+## CI
+
+The GitHub Actions workflow runs:
+
+```sh
 ./build.sh
-git diff --exit-code -- fonts include
+node tools/inspect-bmf-bin.mjs binary/font_terminal_ascii_5x7.bin
+node tools/inspect-bmf-bin.mjs binary/font_terminal_latin1_8x12.bin
+git diff --exit-code -- fonts include binary manifest.json
 ```
 
-That means CI fails if `.bmf` sources were changed but generated JSON/C header files were not committed.
-
-It also uploads the generated dist files as a workflow artifact named `bitmap-font-dist`.
-
-## Serve locally
-
-```bash
-python -m http.server 8080
-```
-
-Open:
-
-```txt
-http://localhost:8080/
-```
+If generated artifacts are stale, CI fails.

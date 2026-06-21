@@ -1,12 +1,13 @@
 {
   "name": "bitmap-font-bmf-pack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "private": true,
   "scripts": {
     "build": "node tools/build-bitmap-fonts.mjs",
     "serve": "python -m http.server 8080",
     "build:json": "node tools/convert-bmf-to-json.mjs source/font_terminal_ascii_5x7.bmf fonts/font_terminal_ascii_5x7.json && node tools/convert-bmf-to-json.mjs source/font_terminal_latin1_8x12.bmf fonts/font_terminal_latin1_8x12.json",
-    "build:c": "node tools/convert-bmf-to-c-header.mjs source/font_terminal_ascii_5x7.bmf include/font_terminal_ascii_5x7.h && node tools/convert-bmf-to-c-header.mjs source/font_terminal_latin1_8x12.bmf include/font_terminal_latin1_8x12.h"
+    "build:c": "node tools/convert-bmf-to-c-header.mjs source/font_terminal_ascii_5x7.bmf include/font_terminal_ascii_5x7.h && node tools/convert-bmf-to-c-header.mjs source/font_terminal_latin1_8x12.bmf include/font_terminal_latin1_8x12.h",
+    "build:bin": "node tools/convert-bmf-to-bin.mjs source/font_terminal_ascii_5x7.bmf binary/font_terminal_ascii_5x7.bin && node tools/convert-bmf-to-bin.mjs source/font_terminal_latin1_8x12.bmf binary/font_terminal_latin1_8x12.bin"
   }
 }
