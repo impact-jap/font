@@ -37,8 +37,13 @@ jobs:
       - name: Build generated font files
         run: ./build.sh
 
+      - name: Inspect binary headers
+        run: |
+          node tools/inspect-bmf-bin.mjs binary/font_terminal_ascii_5x7.bin
+          node tools/inspect-bmf-bin.mjs binary/font_terminal_latin1_8x12.bin
+
       - name: Verify generated files are committed
-        run: git diff --exit-code -- fonts include
+        run: git diff --exit-code -- fonts include binary manifest.json
 
       - name: Upload generated font artifacts
         uses: actions/upload-artifact@v4
@@ -47,3 +52,5 @@ jobs:
           path: |
             fonts/*.json
             include/*.h
+            binary/*.bin
+            manifest.json
